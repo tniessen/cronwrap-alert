@@ -2,6 +2,7 @@
 name = "cronwrap-alert"
 version = "0.1.0"
 authors = ["Tobias Nießen <tniessen@tnie.de>"]
+publish = false
 edition = "2021"
 
 [dependencies]
