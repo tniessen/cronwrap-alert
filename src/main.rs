@@ -3,7 +3,7 @@ use std::process::{Command, ExitCode, ExitStatus, Output};
 
 use chrono::format::SecondsFormat;
 use chrono::prelude::Utc;
-use clap::{error::ErrorKind, CommandFactory, Parser};
+use clap::Parser;
 use gethostname::gethostname;
 use serde::Deserialize;
 use serde_json::json;
@@ -73,11 +73,11 @@ struct Args {
     alert_category: Option<String>,
 
     /// Alert origin (defaults to the hostname)
-    #[arg(long, value_name = "ORIGIN")]
+    #[arg(long, value_name = "ORIGIN", group = "alert_origin_group")]
     alert_origin: Option<String>,
 
     /// Disable the default alert origin (hostname)
-    #[arg(long)]
+    #[arg(long, group = "alert_origin_group")]
     no_alert_origin: bool,
 
     /// Alert endpoint URI (required)
@@ -192,15 +192,6 @@ fn or_env(value: &Option<String>, var_name: &str) -> Option<String> {
 
 fn main() -> ExitCode {
     let args: Args = Args::parse();
-
-    if args.alert_origin.is_some() && args.no_alert_origin {
-        Args::command()
-            .error(
-                ErrorKind::ArgumentConflict,
-                "--alert-origin and --no-alert-origin cannot be used together",
-            )
-            .exit();
-    }
 
     let maybe_hostname: Option<String> = if args.no_alert_origin {
         None
