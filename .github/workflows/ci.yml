@@ -1,4 +1,4 @@
-name: Build
+name: CI
 
 on:
   push:
@@ -18,3 +18,10 @@ jobs:
         name: cronwrap-alert
         path: target/release/cronwrap-alert
         if-no-files-found: error
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Run tests
+      run: cargo test --verbose
