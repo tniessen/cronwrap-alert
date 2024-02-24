@@ -147,22 +147,20 @@ fn format_execution_error(
     let stderr_string = String::from_utf8_lossy(&output.stderr);
     if stderr_string.is_empty() {
         out.push_str("\n\nStandard error output (empty):\n");
+    } else if stderr_string.len() > args.max_output_capture {
+        out.push_str("\n\nStandard error output (truncated):\n\n[...]\n");
+        let partial = {
+            let pos = stderr_string
+                .char_indices()
+                .nth_back(args.max_output_capture)
+                .unwrap()
+                .0;
+            &stderr_string[pos..]
+        };
+        out.push_str(partial);
     } else {
-        if stderr_string.len() > args.max_output_capture {
-            out.push_str("\n\nStandard error output (truncated):\n\n[...]\n");
-            let partial = {
-                let pos = stderr_string
-                    .char_indices()
-                    .nth_back(args.max_output_capture)
-                    .unwrap()
-                    .0;
-                &stderr_string[pos..]
-            };
-            out.push_str(partial);
-        } else {
-            out.push_str("\n\nStandard error output:\n\n");
-            out.push_str(&stderr_string);
-        }
+        out.push_str("\n\nStandard error output:\n\n");
+        out.push_str(&stderr_string);
     }
     out
 }
@@ -208,20 +206,17 @@ pub fn main(args: Args) -> u8 {
     };
 
     let program_name = get_program_name(&args);
-    let body: String;
     let start_time = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
 
-    match Command::new(&args.command).args(&args.args).output() {
+    let body = match Command::new(&args.command).args(&args.args).output() {
         Ok(output) => {
             if is_success(&output.status, &args.ignore_exit_code) {
                 return 0;
             }
-            body = format_execution_error(&start_time, program_name.as_str(), &args, &output);
+            format_execution_error(&start_time, program_name.as_str(), &args, &output)
         }
-        Err(e) => {
-            body = format_spawn_error(&start_time, program_name.as_str(), &args, e);
-        }
-    }
+        Err(e) => format_spawn_error(&start_time, program_name.as_str(), &args, e),
+    };
 
     let subject = format!("Scheduled execution failed: {}", program_name);
     send_alert(&config, subject.as_str(), body.as_str());
