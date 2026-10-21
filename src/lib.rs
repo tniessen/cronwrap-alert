@@ -149,20 +149,18 @@ fn format_execution_error(
         out.push_str("\n\nStandard error output (empty):\n");
     } else if stderr_string.len() > args.max_output_capture {
         out.push_str("\n\nStandard error output (truncated):\n\n[...]\n");
-        let partial = {
-            let pos = stderr_string
-                .char_indices()
-                .nth_back(args.max_output_capture)
-                .unwrap()
-                .0;
-            &stderr_string[pos..]
-        };
-        out.push_str(partial);
+        out.push_str(truncate_stderr(&stderr_string, args.max_output_capture));
     } else {
         out.push_str("\n\nStandard error output:\n\n");
         out.push_str(&stderr_string);
     }
     out
+}
+
+fn truncate_stderr(s: &str, max_bytes: usize) -> &str {
+    let start = s.len() - max_bytes;
+    let pos = (start..=s.len()).find(|&i| s.is_char_boundary(i)).unwrap();
+    &s[pos..]
 }
 
 fn get_program_name(args: &Args) -> String {
@@ -222,4 +220,25 @@ pub fn main(args: Args) -> u8 {
     send_alert(&config, subject.as_str(), body.as_str());
 
     1
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_truncate_stderr_snaps_to_char_boundary() {
+        // "abc©def\n" is 9 bytes; © (U+00A9) is 0xC2 0xA9 (2 bytes).
+        // With max_bytes = 5, the naive start offset (9 - 5 = 4) falls on
+        // the continuation byte 0xA9, which is not a char boundary.
+        // The function must snap forward to offset 5 ('d'), yielding "def\n".
+        assert_eq!(truncate_stderr("abc\u{00a9}def\n", 5), "def\n");
+    }
+
+    #[test]
+    fn test_truncate_stderr_on_char_boundary() {
+        // With max_bytes = 6, the start offset (9 - 6 = 3) lands on 0xC2,
+        // the leading byte of ©, which is a valid char boundary.
+        assert_eq!(truncate_stderr("abc\u{00a9}def\n", 6), "\u{00a9}def\n");
+    }
 }
