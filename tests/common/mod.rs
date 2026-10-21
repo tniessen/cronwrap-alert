@@ -40,7 +40,7 @@ impl TestServer {
                             request
                                 .headers()
                                 .iter()
-                                .find(|h| h.field.equiv(&"Content-Type"))
+                                .find(|h| h.field.equiv("Content-Type"))
                                 .map(|h| -> &str { h.value.as_ref() })
                                 .unwrap(),
                             "application/json"
@@ -49,7 +49,7 @@ impl TestServer {
                             request
                                 .headers()
                                 .iter()
-                                .find(|h| h.field.equiv(&"Authorization"))
+                                .find(|h| h.field.equiv("Authorization"))
                                 .map(|h| -> &str { h.value.as_ref() })
                                 .unwrap(),
                             bearer

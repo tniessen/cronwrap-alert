@@ -120,7 +120,7 @@ fn format_spawn_error(
         program_name, start_time, e, json_command
     );
     for arg in &args.args {
-        out.push_str(&format!("\n  {}", json!(arg).to_string()));
+        out.push_str(&format!("\n  {}", json!(arg)));
     }
     out
 }
@@ -142,7 +142,7 @@ fn format_execution_error(
         program_name, start_time, desc, json_command
     );
     for arg in &args.args {
-        out.push_str(&format!("\n  {}", json!(arg).to_string()));
+        out.push_str(&format!("\n  {}", json!(arg)));
     }
     let stderr_string = String::from_utf8_lossy(&output.stderr);
     if stderr_string.is_empty() {
@@ -176,7 +176,7 @@ fn get_program_name(args: &Args) -> String {
 }
 
 fn is_success(status: &ExitStatus, ignored: &[i32]) -> bool {
-    status.success() || status.code().map_or(false, |c| ignored.contains(&c))
+    status.success() || status.code().is_some_and(|c| ignored.contains(&c))
 }
 
 fn or_env(value: &Option<String>, var_name: &str) -> Option<String> {
